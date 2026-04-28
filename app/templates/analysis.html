@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}支出分析 — 個人記帳簿{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>支出分析</h1>
+    <p class="page-subtitle">了解你的消費習慣</p>
+</div>
+
+<!-- 月份篩選 -->
+<div class="filter-bar" id="analysis-filter">
+    <form method="GET" action="{{ url_for('transaction.analysis') }}" class="filter-form">
+        <label class="filter-label" for="analysis-month">選擇月份：</label>
+        <input type="month" name="month" id="analysis-month" class="form-input filter-input"
+               value="{{ current_month }}" onchange="this.form.submit()">
+    </form>
+</div>
+
+<!-- 摘要卡片 -->
+<div class="summary-cards summary-cards-sm" id="analysis-summary">
+    <div class="summary-card card-expense">
+        <div class="card-icon">📉</div>
+        <div class="card-info">
+            <span class="card-label">本月支出</span>
+            <span class="card-amount">${{ "%.0f"|format(summary.total_expense) }}</span>
+        </div>
+    </div>
+    <div class="summary-card card-income">
+        <div class="card-icon">📈</div>
+        <div class="card-info">
+            <span class="card-label">本月收入</span>
+            <span class="card-amount">${{ "%.0f"|format(summary.total_income) }}</span>
+        </div>
+    </div>
+</div>
+
+{% if expense_data %}
+<!-- 圖表區域 -->
+<div class="charts-grid" id="charts-grid">
+    <div class="chart-card" id="pie-chart-card">
+        <h3 class="chart-title">支出分類佔比</h3>
+        <div class="chart-wrapper">
+            <canvas id="pie-chart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card" id="bar-chart-card">
+        <h3 class="chart-title">各分類支出金額</h3>
+        <div class="chart-wrapper">
+            <canvas id="bar-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- 明細表格 -->
+<div class="section" id="detail-section">
+    <h3 class="section-title">分類明細</h3>
+    <div class="detail-table-wrapper">
+        <table class="detail-table" id="detail-table">
+            <thead>
+                <tr><th>分類</th><th>金額</th><th>佔比</th></tr>
+            </thead>
+            <tbody>
+                {% for item in expense_data %}
+                <tr>
+                    <td>{{ item.category_name }}</td>
+                    <td class="amount-expense">${{ "%.0f"|format(item.total) }}</td>
+                    <td>{{ "%.1f"|format(item.total / summary.total_expense * 100) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state" id="empty-state-analysis">
+    <span class="empty-icon">📊</span>
+    <p>這個月還沒有支出紀錄</p>
+    <a href="{{ url_for('transaction.new', type='expense') }}" class="btn btn-primary">記一筆支出</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if expense_data %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const labels = {{ chart_labels | tojson }};
+    const values = {{ chart_values | tojson }};
+    const colors = [
+        '#6C5CE7','#00B894','#FDCB6E','#E17055','#0984E3',
+        '#E84393','#00CEC9','#F39C12'
+    ];
+
+    // 圓餅圖
+    new Chart(document.getElementById('pie-chart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors.slice(0, labels.length),
+                borderWidth: 2,
+                borderColor: '#1a1a2e'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#ccc', padding: 16, font: { size: 13 } } }
+            }
+        }
+    });
+
+    // 長條圖
+    new Chart(document.getElementById('bar-chart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '支出金額',
+                data: values,
+                backgroundColor: colors.slice(0, labels.length),
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { color: '#999' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { ticks: { color: '#ccc' }, grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

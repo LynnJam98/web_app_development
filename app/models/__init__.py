@@ -19,11 +19,21 @@ def get_db():
 
     回傳一個 sqlite3 連線物件，設定 row_factory 為 sqlite3.Row，
     讓查詢結果可以用欄位名稱存取（如 row['amount']）。
+
+    Returns:
+        sqlite3.Connection: 資料庫連線物件。
+
+    Raises:
+        sqlite3.Error: 無法連線至資料庫時拋出。
     """
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")  # 啟用外鍵約束
-    return conn
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")  # 啟用外鍵約束
+        return conn
+    except sqlite3.Error as e:
+        print(f"[DB ERROR] 無法連線至資料庫: {e}")
+        raise
 
 
 def init_db():
@@ -32,14 +42,24 @@ def init_db():
 
     如果 instance/ 資料夾不存在，會自動建立。
     接著讀取 database/schema.sql 並執行建表語法與預設資料。
+
+    Raises:
+        FileNotFoundError: 找不到 schema.sql 時拋出。
+        sqlite3.Error: 執行 SQL 失敗時拋出。
     """
     # 確保 instance 資料夾存在
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
-    conn = get_db()
     try:
+        conn = get_db()
         with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
             conn.executescript(f.read())
         conn.commit()
-    finally:
         conn.close()
+        print("[DB] 資料庫初始化完成。")
+    except FileNotFoundError:
+        print(f"[DB ERROR] 找不到 schema 檔案: {SCHEMA_PATH}")
+        raise
+    except sqlite3.Error as e:
+        print(f"[DB ERROR] 資料庫初始化失敗: {e}")
+        raise

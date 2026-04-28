@@ -6,6 +6,8 @@
 
 from flask import Blueprint, render_template
 
+from app.models.transaction import Transaction
+
 main_bp = Blueprint('main', __name__)
 
 
@@ -23,5 +25,11 @@ def index():
     渲染模板：templates/index.html
     傳入變數：summary, recent_transactions
     """
-    # TODO: 實作邏輯
-    pass
+    summary = Transaction.get_monthly_summary()
+    recent_transactions = Transaction.get_recent(limit=10)
+
+    return render_template(
+        'index.html',
+        summary=summary,
+        recent_transactions=recent_transactions,
+    )

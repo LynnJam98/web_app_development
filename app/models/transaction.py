@@ -2,8 +2,10 @@
 Transaction Model — 收支紀錄資料表操作
 
 負責對 transactions 資料表進行 CRUD 操作，以及提供統計查詢方法。
+使用 sqlite3 模組，資料庫路徑為 instance/database.db。
 """
 
+import sqlite3
 from datetime import date, datetime
 
 from app.models import get_db
@@ -11,6 +13,10 @@ from app.models import get_db
 
 class Transaction:
     """收支紀錄 Model，提供收支資料的 CRUD 與統計方法。"""
+
+    # ------------------------------------------------------------------
+    # CRUD 方法
+    # ------------------------------------------------------------------
 
     @staticmethod
     def create(trans_type, amount, category_id, trans_date=None, note=''):
@@ -25,22 +31,25 @@ class Transaction:
             note (str, optional): 備註，預設為空字串。
 
         Returns:
-            int: 新建立的紀錄 ID。
+            int | None: 新建立的紀錄 ID，失敗時回傳 None。
         """
         if trans_date is None:
             trans_date = date.today().isoformat()
 
-        conn = get_db()
         try:
+            conn = get_db()
             cursor = conn.execute(
                 '''INSERT INTO transactions (type, amount, category_id, date, note)
                    VALUES (?, ?, ?, ?, ?)''',
                 (trans_type, amount, category_id, trans_date, note)
             )
             conn.commit()
-            return cursor.lastrowid
-        finally:
+            last_id = cursor.lastrowid
             conn.close()
+            return last_id
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] create 失敗: {e}")
+            return None
 
     @staticmethod
     def get_all(month=None):
@@ -52,9 +61,10 @@ class Transaction:
 
         Returns:
             list[sqlite3.Row]: 收支紀錄列表，按日期降序排列。
+            空列表: 查詢失敗時回傳空列表。
         """
-        conn = get_db()
         try:
+            conn = get_db()
             if month:
                 rows = conn.execute(
                     '''SELECT t.*, c.name as category_name
@@ -71,9 +81,11 @@ class Transaction:
                        JOIN categories c ON t.category_id = c.id
                        ORDER BY t.date DESC, t.id DESC'''
                 ).fetchall()
-            return rows
-        finally:
             conn.close()
+            return rows
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] get_all 失敗: {e}")
+            return []
 
     @staticmethod
     def get_by_id(transaction_id):
@@ -84,10 +96,10 @@ class Transaction:
             transaction_id (int): 紀錄 ID。
 
         Returns:
-            sqlite3.Row | None: 紀錄資料，若不存在則回傳 None。
+            sqlite3.Row | None: 紀錄資料，若不存在或查詢失敗則回傳 None。
         """
-        conn = get_db()
         try:
+            conn = get_db()
             row = conn.execute(
                 '''SELECT t.*, c.name as category_name
                    FROM transactions t
@@ -95,9 +107,11 @@ class Transaction:
                    WHERE t.id = ?''',
                 (transaction_id,)
             ).fetchone()
-            return row
-        finally:
             conn.close()
+            return row
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] get_by_id({transaction_id}) 失敗: {e}")
+            return None
 
     @staticmethod
     def update(transaction_id, trans_type, amount, category_id, trans_date, note=''):
@@ -111,10 +125,13 @@ class Transaction:
             category_id (int): 分類 ID。
             trans_date (str): 交易日期（YYYY-MM-DD）。
             note (str, optional): 備註，預設為空字串。
+
+        Returns:
+            bool: 更新成功回傳 True，失敗回傳 False。
         """
         now = datetime.now().isoformat(timespec='seconds')
-        conn = get_db()
         try:
+            conn = get_db()
             conn.execute(
                 '''UPDATE transactions
                    SET type = ?, amount = ?, category_id = ?, date = ?, note = ?, updated_at = ?
@@ -122,8 +139,11 @@ class Transaction:
                 (trans_type, amount, category_id, trans_date, note, now, transaction_id)
             )
             conn.commit()
-        finally:
             conn.close()
+            return True
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] update({transaction_id}) 失敗: {e}")
+            return False
 
     @staticmethod
     def delete(transaction_id):
@@ -132,16 +152,22 @@ class Transaction:
 
         Args:
             transaction_id (int): 要刪除的紀錄 ID。
+
+        Returns:
+            bool: 刪除成功回傳 True，失敗回傳 False。
         """
-        conn = get_db()
         try:
+            conn = get_db()
             conn.execute(
                 'DELETE FROM transactions WHERE id = ?',
                 (transaction_id,)
             )
             conn.commit()
-        finally:
             conn.close()
+            return True
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] delete({transaction_id}) 失敗: {e}")
+            return False
 
     # ------------------------------------------------------------------
     # 統計查詢方法
@@ -157,12 +183,13 @@ class Transaction:
 
         Returns:
             dict: 包含 'total_income', 'total_expense', 'balance' 的字典。
+                  查詢失敗時各值皆為 0。
         """
         if month is None:
             month = date.today().strftime('%Y-%m')
 
-        conn = get_db()
         try:
+            conn = get_db()
             row = conn.execute(
                 '''SELECT
                      COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
@@ -171,6 +198,7 @@ class Transaction:
                    WHERE strftime('%Y-%m', date) = ?''',
                 (month,)
             ).fetchone()
+            conn.close()
 
             total_income = row['total_income']
             total_expense = row['total_expense']
@@ -180,8 +208,9 @@ class Transaction:
                 'total_expense': total_expense,
                 'balance': total_income - total_expense,
             }
-        finally:
-            conn.close()
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] get_monthly_summary({month}) 失敗: {e}")
+            return {'total_income': 0, 'total_expense': 0, 'balance': 0}
 
     @staticmethod
     def get_expense_by_category(month=None):
@@ -193,12 +222,13 @@ class Transaction:
 
         Returns:
             list[sqlite3.Row]: 包含 'category_name' 與 'total' 的統計列表。
+            空列表: 查詢失敗時回傳空列表。
         """
         if month is None:
             month = date.today().strftime('%Y-%m')
 
-        conn = get_db()
         try:
+            conn = get_db()
             rows = conn.execute(
                 '''SELECT c.name as category_name, SUM(t.amount) as total
                    FROM transactions t
@@ -208,9 +238,11 @@ class Transaction:
                    ORDER BY total DESC''',
                 (month,)
             ).fetchall()
-            return rows
-        finally:
             conn.close()
+            return rows
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] get_expense_by_category({month}) 失敗: {e}")
+            return []
 
     @staticmethod
     def get_recent(limit=10):
@@ -222,9 +254,10 @@ class Transaction:
 
         Returns:
             list[sqlite3.Row]: 最近的收支紀錄列表。
+            空列表: 查詢失敗時回傳空列表。
         """
-        conn = get_db()
         try:
+            conn = get_db()
             rows = conn.execute(
                 '''SELECT t.*, c.name as category_name
                    FROM transactions t
@@ -233,6 +266,8 @@ class Transaction:
                    LIMIT ?''',
                 (limit,)
             ).fetchall()
-            return rows
-        finally:
             conn.close()
+            return rows
+        except sqlite3.Error as e:
+            print(f"[Transaction ERROR] get_recent({limit}) 失敗: {e}")
+            return []

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}首頁 — 個人記帳簿{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>當月總覽</h1>
+    <p class="page-subtitle">掌握你的每一筆收支</p>
+</div>
+
+<!-- 收支摘要卡片 -->
+<div class="summary-cards" id="summary-cards">
+    <div class="summary-card card-income" id="card-income">
+        <div class="card-icon">📈</div>
+        <div class="card-info">
+            <span class="card-label">本月收入</span>
+            <span class="card-amount">${{ "%.0f"|format(summary.total_income) }}</span>
+        </div>
+    </div>
+    <div class="summary-card card-expense" id="card-expense">
+        <div class="card-icon">📉</div>
+        <div class="card-info">
+            <span class="card-label">本月支出</span>
+            <span class="card-amount">${{ "%.0f"|format(summary.total_expense) }}</span>
+        </div>
+    </div>
+    <div class="summary-card card-balance" id="card-balance">
+        <div class="card-icon">💎</div>
+        <div class="card-info">
+            <span class="card-label">結餘</span>
+            <span class="card-amount {% if summary.balance >= 0 %}positive{% else %}negative{% endif %}">
+                ${{ "%.0f"|format(summary.balance) }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="quick-actions" id="quick-actions">
+    <a href="{{ url_for('transaction.new', type='expense') }}" class="action-btn btn-expense" id="btn-add-expense">
+        <span class="btn-icon">💸</span>
+        <span>記一筆支出</span>
+    </a>
+    <a href="{{ url_for('transaction.new', type='income') }}" class="action-btn btn-income" id="btn-add-income">
+        <span class="btn-icon">💵</span>
+        <span>記一筆收入</span>
+    </a>
+</div>
+
+<!-- 近期紀錄 -->
+<div class="section" id="recent-section">
+    <div class="section-header">
+        <h2>近期紀錄</h2>
+        <a href="{{ url_for('transaction.history') }}" class="link-more">查看全部 →</a>
+    </div>
+
+    {% if recent_transactions %}
+    <div class="transaction-list" id="recent-transactions">
+        {% for t in recent_transactions %}
+        <div class="transaction-item" id="transaction-{{ t.id }}">
+            <div class="transaction-left">
+                <span class="transaction-type-badge {% if t.type == 'income' %}badge-income{% else %}badge-expense{% endif %}">
+                    {% if t.type == 'income' %}收入{% else %}支出{% endif %}
+                </span>
+                <div class="transaction-details">
+                    <span class="transaction-category">{{ t.category_name }}</span>
+                    <span class="transaction-date">{{ t.date }}</span>
+                    {% if t.note %}
+                    <span class="transaction-note">{{ t.note }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="transaction-right">
+                <span class="transaction-amount {% if t.type == 'income' %}amount-income{% else %}amount-expense{% endif %}">
+                    {% if t.type == 'income' %}+{% else %}-{% endif %}${{ "%.0f"|format(t.amount) }}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" id="empty-state">
+        <span class="empty-icon">📝</span>
+        <p>還沒有任何紀錄</p>
+        <a href="{{ url_for('transaction.new') }}" class="btn btn-primary">開始記帳</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

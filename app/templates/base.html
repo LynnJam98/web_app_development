@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="個人記帳簿系統 — 簡單、直覺的個人財務管理工具">
+    <title>{% block title %}個人記帳簿{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- 導覽列 -->
+    <nav class="navbar" id="main-navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="nav-brand" id="nav-brand">
+                <span class="brand-icon">💰</span>
+                <span class="brand-text">記帳簿</span>
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('main.index') }}" class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}" id="nav-home">
+                    <span class="nav-icon">🏠</span>
+                    <span>首頁</span>
+                </a>
+                <a href="{{ url_for('transaction.new') }}" class="nav-link {% if request.endpoint == 'transaction.new' %}active{% endif %}" id="nav-new">
+                    <span class="nav-icon">➕</span>
+                    <span>新增</span>
+                </a>
+                <a href="{{ url_for('transaction.history') }}" class="nav-link {% if request.endpoint == 'transaction.history' %}active{% endif %}" id="nav-history">
+                    <span class="nav-icon">📋</span>
+                    <span>紀錄</span>
+                </a>
+                <a href="{{ url_for('transaction.analysis') }}" class="nav-link {% if request.endpoint == 'transaction.analysis' %}active{% endif %}" id="nav-analysis">
+                    <span class="nav-icon">📊</span>
+                    <span>分析</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash 訊息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container" id="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}" id="flash-msg-{{ loop.index }}">
+            <span class="flash-text">{{ message }}</span>
+            <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- 主要內容 -->
+    <main class="main-content" id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="footer" id="main-footer">
+        <div class="footer-content">
+            <p>💰 個人記帳簿 &copy; 2026</p>
+        </div>
+    </footer>
+
+    <script>
+        // 自動隱藏 flash 訊息
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(msg) {
+                setTimeout(function() {
+                    msg.style.opacity = '0';
+                    msg.style.transform = 'translateY(-20px)';
+                    setTimeout(function() { msg.remove(); }, 300);
+                }, 4000);
+            });
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

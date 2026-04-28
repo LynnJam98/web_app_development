@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}歷史紀錄 — 個人記帳簿{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>歷史紀錄</h1>
+    <p class="page-subtitle">查看所有收支明細</p>
+</div>
+
+<!-- 月份篩選器 -->
+<div class="filter-bar" id="filter-bar">
+    <form method="GET" action="{{ url_for('transaction.history') }}" class="filter-form" id="filter-form">
+        <label class="filter-label" for="month-filter">選擇月份：</label>
+        <input type="month" name="month" id="month-filter" class="form-input filter-input"
+               value="{{ current_month }}" onchange="this.form.submit()">
+    </form>
+</div>
+
+{% if transactions %}
+<div class="transaction-list" id="history-list">
+    {% for t in transactions %}
+    <div class="transaction-item transaction-item-full" id="history-item-{{ t.id }}">
+        <div class="transaction-left">
+            <span class="transaction-type-badge {% if t.type == 'income' %}badge-income{% else %}badge-expense{% endif %}">
+                {% if t.type == 'income' %}收入{% else %}支出{% endif %}
+            </span>
+            <div class="transaction-details">
+                <span class="transaction-category">{{ t.category_name }}</span>
+                <span class="transaction-date">{{ t.date }}</span>
+                {% if t.note %}<span class="transaction-note">{{ t.note }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="transaction-right">
+            <span class="transaction-amount {% if t.type == 'income' %}amount-income{% else %}amount-expense{% endif %}">
+                {% if t.type == 'income' %}+{% else %}-{% endif %}${{ "%.0f"|format(t.amount) }}
+            </span>
+            <div class="transaction-actions">
+                <a href="{{ url_for('transaction.edit', id=t.id) }}" class="btn btn-sm btn-edit" title="編輯">✏️</a>
+                <form method="POST" action="{{ url_for('transaction.delete', id=t.id) }}" class="inline-form"
+                      onsubmit="return confirm('確定要刪除這筆紀錄嗎？');">
+                    <button type="submit" class="btn btn-sm btn-delete" title="刪除">🗑️</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" id="empty-state-history">
+    <span class="empty-icon">📭</span>
+    <p>這個月還沒有任何紀錄</p>
+    <a href="{{ url_for('transaction.new') }}" class="btn btn-primary">新增紀錄</a>
+</div>
+{% endif %}
+{% endblock %}
