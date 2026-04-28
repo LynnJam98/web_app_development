@@ -13,22 +13,22 @@
         <div class="card-icon">📈</div>
         <div class="card-info">
             <span class="card-label">本月收入</span>
-            <span class="card-amount">${{ "%.0f"|format(summary.total_income) }}</span>
+            <span class="card-amount">${{ "%.0f"|format(summary['total_income']) }}</span>
         </div>
     </div>
     <div class="summary-card card-expense" id="card-expense">
         <div class="card-icon">📉</div>
         <div class="card-info">
             <span class="card-label">本月支出</span>
-            <span class="card-amount">${{ "%.0f"|format(summary.total_expense) }}</span>
+            <span class="card-amount">${{ "%.0f"|format(summary['total_expense']) }}</span>
         </div>
     </div>
     <div class="summary-card card-balance" id="card-balance">
         <div class="card-icon">💎</div>
         <div class="card-info">
             <span class="card-label">結餘</span>
-            <span class="card-amount {% if summary.balance >= 0 %}positive{% else %}negative{% endif %}">
-                ${{ "%.0f"|format(summary.balance) }}
+            <span class="card-amount {% if summary['balance'] >= 0 %}positive{% else %}negative{% endif %}">
+                ${{ "%.0f"|format(summary['balance']) }}
             </span>
         </div>
     </div>
@@ -56,22 +56,22 @@
     {% if recent_transactions %}
     <div class="transaction-list" id="recent-transactions">
         {% for t in recent_transactions %}
-        <div class="transaction-item" id="transaction-{{ t.id }}">
+        <div class="transaction-item" id="transaction-{{ t['id'] }}">
             <div class="transaction-left">
-                <span class="transaction-type-badge {% if t.type == 'income' %}badge-income{% else %}badge-expense{% endif %}">
-                    {% if t.type == 'income' %}收入{% else %}支出{% endif %}
+                <span class="transaction-type-badge {% if t['type'] == 'income' %}badge-income{% else %}badge-expense{% endif %}">
+                    {% if t['type'] == 'income' %}收入{% else %}支出{% endif %}
                 </span>
                 <div class="transaction-details">
-                    <span class="transaction-category">{{ t.category_name }}</span>
-                    <span class="transaction-date">{{ t.date }}</span>
-                    {% if t.note %}
-                    <span class="transaction-note">{{ t.note }}</span>
+                    <span class="transaction-category">{{ t['category_name'] }}</span>
+                    <span class="transaction-date">{{ t['date'] }}</span>
+                    {% if t['note'] %}
+                    <span class="transaction-note">{{ t['note'] }}</span>
                     {% endif %}
                 </div>
             </div>
             <div class="transaction-right">
-                <span class="transaction-amount {% if t.type == 'income' %}amount-income{% else %}amount-expense{% endif %}">
-                    {% if t.type == 'income' %}+{% else %}-{% endif %}${{ "%.0f"|format(t.amount) }}
+                <span class="transaction-amount {% if t['type'] == 'income' %}amount-income{% else %}amount-expense{% endif %}">
+                    {% if t['type'] == 'income' %}+{% else %}-{% endif %}${{ "%.0f"|format(t['amount']) }}
                 </span>
             </div>
         </div>

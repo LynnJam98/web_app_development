@@ -137,16 +137,20 @@ document.addEventListener('DOMContentLoaded', function() {
             optgroupExpense.style.display = '';
             optgroupIncome.style.display = 'none';
             // 如果當前選中的是收入分類，清除選擇
-            const currentOption = categorySelect.options[categorySelect.selectedIndex];
-            if (currentOption && currentOption.dataset.type === 'income') {
-                categorySelect.value = '';
+            if (categorySelect.selectedIndex >= 0) {
+                const currentOption = categorySelect.options[categorySelect.selectedIndex];
+                if (currentOption && currentOption.dataset.type === 'income') {
+                    categorySelect.value = '';
+                }
             }
         } else if (selectedType === 'income') {
             optgroupExpense.style.display = 'none';
             optgroupIncome.style.display = '';
-            const currentOption = categorySelect.options[categorySelect.selectedIndex];
-            if (currentOption && currentOption.dataset.type === 'expense') {
-                categorySelect.value = '';
+            if (categorySelect.selectedIndex >= 0) {
+                const currentOption = categorySelect.options[categorySelect.selectedIndex];
+                if (currentOption && currentOption.dataset.type === 'expense') {
+                    categorySelect.value = '';
+                }
             }
         }
     }
